@@ -1,4 +1,4 @@
-const commonUtil = require('./src/spiders/miaoshou/common.js');
+const commonUtil = require('./libs/miaoshou/common.js');
 
 function loginParam(mobile, password) {
     let formData = {
