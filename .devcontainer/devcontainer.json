@@ -1,0 +1,7 @@
+{
+  "name": "spiderai-web",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "web",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "vscode"
+}

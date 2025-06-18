@@ -1,25 +1,32 @@
-version: '3.8'
-
 services:
   web:
+    container_name: spiderai-web
     build: .
     ports:
       - "8080:8080"
     volumes:
-      - ./app:/app/app  # 映射应用代码
-      - ./config.py:/app/config.py  # 映射配置文件
+      - ./:/app
+    env_file: .env
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
+    depends_on:
+      - redis
     command: flask run --host=0.0.0.0 --reload
 
   redis:
+    container_name: spiderai-redis
     image: redis:6-alpine
     ports:
       - "6379:6379"
+    env_file: .env
     volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
       - redis_data:/data
-    command: redis-server --appendonly yes
+    command:
+      - sh
+      - -c
+      - "redis-server /usr/local/etc/redis/redis.conf --requirepass $$REDIS_PASSWORD"
 
 volumes:
   redis_data:

@@ -39,7 +39,7 @@ def login(username=None, password=None):
         print(f'ConnectionError: {e}')
 
 
-def searchItemList(shopIds, cookie):
+def searchItemList(shopIds, pageNo, pageSize, cookie):
     url = "https://erp.91miaoshou.com/api/platform/shopee_global/item/item/searchItemList"
     headers = {
         'User-Agent': 'Mozilla/5.0',
@@ -49,8 +49,8 @@ def searchItemList(shopIds, cookie):
         'shopId': shopIds
     }
     data = {
-        'pageNo': 1,
-        'pageSize': 2000,
+        'pageNo': pageNo,
+        'pageSize': pageSize,
         'status': 'onsale',
         **searchItemCondition
     }
@@ -102,4 +102,4 @@ if __name__ == "__main__":
     cookie = login('MX_hhb', 'MX_hhb250521')
     # getShopList('shopee', cookie)
     shopIds = get_account_shop_list(cookie)
-    searchItemList(shopIds, cookie)
+    searchItemList(shopIds, 1, 5000, cookie)
