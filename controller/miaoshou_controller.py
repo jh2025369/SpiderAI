@@ -6,7 +6,6 @@ miaoshou_bp = Blueprint('miaoshou', __name__)
 
 @miaoshou_bp.route('/login', methods=['GET'])
 def request_login():
-    global cookie
     username = request.args.get('username')
     password = request.args.get('password')
     cookie = login(username, password)

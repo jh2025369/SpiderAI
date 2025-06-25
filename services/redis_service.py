@@ -24,11 +24,50 @@ class RedisService:
             raise
 
     @classmethod
+    def set_value(cls, key, value, expire=None):
+        if expire:
+            return cls._conn.setex(key, expire, value)
+        return cls._conn.set(key, value)
+    
+    @classmethod
+    def get_value(cls, key):
+        return cls._conn.get(key)
+    
+    @classmethod
+    def delete_key(cls, key):
+        return cls._conn.delete(key)
+
+    @classmethod
+    def set_hset(cls, key, mapping):
+        name = f'user:{key}'
+        return cls._conn.hset(name, mapping=mapping)
+    
+    @classmethod
+    def update_hset(cls, key, field, value):
+        name = f'user:{key}'
+        return cls._conn.hset(name, field, value)
+    
+    @classmethod
+    def get_hset(cls, key, field=None):
+        name = f'user:{key}'
+        if field:
+            return cls._conn.hget(name, field)
+        else:
+            return cls._conn.hgetall(name)
+    
+    @classmethod
+    def delete_hset(cls, key, *fields):
+        name = f'user:{key}'
+        if not fields:
+            return cls._conn.delete(name)
+        return cls._conn.hdel(name, *fields)
+
+    @classmethod
     def set_cookie(cls, user_id, cookie):
         """存储Cookie并设置过期"""
         if not cls._conn:
             raise RuntimeError("Redis未初始化")
-        cls._conn.setex(
+        return cls._conn.setex(
             name=f"user:{user_id}:cookie",
             time=timedelta(seconds=Config.SESSION_EXPIRE),
             value=cookie
@@ -46,7 +85,7 @@ class RedisService:
         """删除Cookie"""
         if not cls._conn:
             raise RuntimeError("Redis未初始化")
-        cls._conn.delete(f"user:{user_id}:cookie")
+        return cls._conn.delete(f"user:{user_id}:cookie")
 
     @classmethod
     def get_connection(cls):

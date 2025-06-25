@@ -99,7 +99,7 @@ def get_account_shop_list(cookie):
 
 
 if __name__ == "__main__":
-    cookie = login('MX_hhb', 'MX_hhb250521')
+    cookie = login('username', 'password')
     # getShopList('shopee', cookie)
     shopIds = get_account_shop_list(cookie)
     searchItemList(shopIds, 1, 5000, cookie)
