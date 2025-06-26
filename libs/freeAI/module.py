@@ -48,7 +48,6 @@ def get_device_id():
 
     node_command = [
         'node',
-        '--max-old-space-size=8192',
         'libs/freeAI/static/fp-1.min.js'
     ]
     result = subprocess.run(

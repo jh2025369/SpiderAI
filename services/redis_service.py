@@ -40,7 +40,8 @@ class RedisService:
     @classmethod
     def set_hset(cls, key, mapping):
         name = f'user:{key}'
-        return cls._conn.hset(name, mapping=mapping)
+        cls._conn.delete(name)
+        return cls._conn.hmset(name, mapping=mapping)
     
     @classmethod
     def update_hset(cls, key, field, value):
