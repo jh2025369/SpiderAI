@@ -39,29 +39,25 @@ class RedisService:
 
     @classmethod
     def set_hset(cls, key, mapping):
-        name = f'user:{key}'
-        cls._conn.delete(name)
-        return cls._conn.hmset(name, mapping=mapping)
+        cls._conn.delete(key)
+        return cls._conn.hmset(key, mapping=mapping)
     
     @classmethod
     def update_hset(cls, key, field, value):
-        name = f'user:{key}'
-        return cls._conn.hset(name, field, value)
+        return cls._conn.hset(key, field, value)
     
     @classmethod
     def get_hset(cls, key, field=None):
-        name = f'user:{key}'
         if field:
-            return cls._conn.hget(name, field)
+            return cls._conn.hget(key, field)
         else:
-            return cls._conn.hgetall(name)
+            return cls._conn.hgetall(key)
     
     @classmethod
     def delete_hset(cls, key, *fields):
-        name = f'user:{key}'
         if not fields:
-            return cls._conn.delete(name)
-        return cls._conn.hdel(name, *fields)
+            return cls._conn.delete(key)
+        return cls._conn.hdel(key, *fields)
 
     @classmethod
     def set_cookie(cls, user_id, cookie):
