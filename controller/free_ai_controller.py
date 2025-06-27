@@ -1,5 +1,7 @@
 from flask import Blueprint, request
+from requests_toolbelt import MultipartEncoder
 from libs.freeAI.module import get_device_id, login, upload_file, create_session, fetch_files, completion
+from libs.freeAI.module import process_image_url, process_local_file
 from services.redis_service import RedisService
 
 free_ai_bp = Blueprint('freeAI', __name__)
@@ -20,18 +22,18 @@ def request_login():
     return {
         'status': 'success',
         'token': token,
-        'device_id': device_id
+        'deviceId': device_id
     }
 
 
 @free_ai_bp.route('/chat', methods=['post'])
 def chat():
-    json_data = request.get_json()
-    user_id = json_data.get('userId')
-    images = json_data.get('images', [])
-    prompt = json_data.get('prompt')
-    session_id = json_data.get('sessionId')
-    token = json_data.get('token')
+    user_id = request.form.get('userId')
+    images = request.form.get('images', [])
+    prompt = request.form.get('prompt')
+    session_id = request.form.get('sessionId')
+    token = request.form.get('token')
+    files = request.files.getlist('files')
     if not token:
         token = RedisService.get_hset(f'user:{user_id}', 'token')
     if not token:
@@ -43,8 +45,19 @@ def chat():
     try:
         file_ids = []
         for imageUrl in images:
-            file_id = upload_file(imageUrl, token)
+            encoder = process_image_url(imageUrl)
+            file_id = upload_file(encoder, token)
             file_ids.append(file_id)
+        
+        for file in files:
+            encoder = MultipartEncoder(
+                fields={
+                    'file': (file.filename, file.stream, file.mimetype)
+                }
+            )
+            file_id = upload_file(encoder, token)
+            file_ids.append(file_id)
+        
         
         if len(file_ids) == 0 or fetch_files(file_ids, token):
             parent_message_id = None

@@ -27,17 +27,42 @@ def process_image_url(image_url):
 
     image_name = image_url.split("/")[-1]
     image_type = imghdr.what(None, h=image_data)
-    if image_type not in ["jpeg", "png", "webp"]:
+    if image_type not in ['jpeg', 'png', 'jpg', 'gif']:
         raise ValueError("不支持的图片格式")
     
     filename = f'{image_name}.{image_type}'
 
-    save_dir = "libs/freeAI/images"
+    save_dir = 'libs/freeAI/images'
     os.makedirs(save_dir, exist_ok=True)
-    with open(f"{save_dir}/{filename}", "wb") as f:
+    with open(f'{save_dir}/{filename}', 'wb') as f:
         f.write(image_data)
+
+    encoder = MultipartEncoder(
+        fields={
+            'file': (filename, BytesIO(image_data), f'image/{image_type}')
+        }
+    )
+    return encoder
+
+
+def process_local_file(file_path):
+    filename = file_path.split('/')[-1]
+    file_type = filename.split('.')[-1]
+
+    mimetype = 'application/octet-stream'
+    if file_type in ['jpeg', 'png', 'jpg', 'gif']:
+        mimetype = f'image/{file_type}'
+    elif file_type in ['text']:
+        mimetype = 'text/plain'
     
-    return filename, image_type, image_data
+    with open(file_path, 'rb') as f:
+        encoder = MultipartEncoder(
+            fields={
+                'file': (filename, f.read(), mimetype)
+            }
+        )
+
+    return encoder
 
 
 def get_device_id():
@@ -133,7 +158,7 @@ def do_solve_challenge(data):
     return res
 
 
-def upload_file(image_url, token):
+def upload_file(encoder, token):
     challenge = create_pow_challenge('/api/v0/file/upload_file', token)
     data = do_solve_challenge(challenge)
     XDsPowResponse = ''
@@ -155,32 +180,8 @@ def upload_file(image_url, token):
         'x-thinking-enabled': '0',
         'x-ds-pow-response': XDsPowResponse,
         'Authorization': f'Bearer {token}',
+        'content-type': encoder.content_type
     }
-
-    filename, image_type, image_data = process_image_url(image_url)
-    
-    # # 构造multipart数据
-    # boundary = '----WebKitFormBoundary' + ''.join(
-    #     random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=16)
-    # )
-    
-    # # 手动构造请求体
-    # body = (
-    #     f'--{boundary}\r\n'
-    #     f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
-    #     f'Content-Type: image/{image_type}\r\n\r\n'
-    #     f'{requests.get(image_url).content.decode("latin1")}\r\n'
-    #     f'--{boundary}--\r\n'
-    # )
-    # headers['content-type'] = f'multipart/form-data; boundary={boundary}'
-
-    image_data = BytesIO(image_data)
-    encoder = MultipartEncoder(
-        fields={
-            'file': (filename, image_data, f'image/{image_type}')
-        }
-    )
-    headers['content-type'] = encoder.content_type
 
     response = requests.post(url, headers=headers, data=encoder)
     res = json.loads(response.text)
@@ -302,7 +303,9 @@ if __name__ == "__main__":
     device_id = get_device_id()
     token = login('mobile', 'password', device_id)
 
-    file_id = upload_file('https://s-cf-tw.shopeesz.com/file/sg-11134201-7rato-mb4py6ikbbdv44', token)
+    # encoder = process_image_url('https://s-cf-tw.shopeesz.com/file/sg-11134201-7rato-mb4py6ikbbdv44')
+    encoder = process_local_file('libs/freeAI/images/sg-11134201-7ra2p-mbdizvuro38157.jpeg')
+    file_id = upload_file(encoder, token)
     if fetch_files([file_id], token):
         session_id = create_session(token)
         completion('描述一下这张图片', [file_id], session_id, None, token)

@@ -3,6 +3,7 @@ from config import Config
 from services.redis_service import RedisService
 from controller.miaoshou_controller import miaoshou_bp
 from controller.free_ai_controller import free_ai_bp
+from controller.xueqiu_controller import xueqiu_bp
 
 def create_app():
     app = Flask(__name__)
@@ -12,6 +13,7 @@ def create_app():
 
     app.register_blueprint(miaoshou_bp, url_prefix='/miaoshou')
     app.register_blueprint(free_ai_bp, url_prefix='/freeAI')
+    app.register_blueprint(xueqiu_bp, url_prefix='/xueqiu')
 
     return app
 
