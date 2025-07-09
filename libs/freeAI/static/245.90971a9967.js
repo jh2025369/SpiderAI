@@ -205,9 +205,6 @@ function runChallenge(data) {
     return onmessage(data);
 }
 
-// function test() {return Promise.resolve(1);}
-// function test1() {return test().then((e)=> {return e;})};
-
 // var data = {
 //     'algorithm': 'DeepSeekHashV1',
 //     'challenge': 'f399ead46fe751e5e77a71a20f3d51dd409ba4839f39c20f5323c09fe7edcfaf',

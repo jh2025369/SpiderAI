@@ -62,7 +62,7 @@ def chat():
         if len(file_ids) == 0 or fetch_files(file_ids, token):
             parent_message_id = None
             if session_id:
-                parent_message_id = RedisService.get_hset(f'{user_id}:session', session_id)
+                parent_message_id = int(RedisService.get_hset(f'{user_id}:session', session_id))
             else:
                 session_id = create_session(token)
             result, message_id = completion(prompt, file_ids, session_id, parent_message_id, token)

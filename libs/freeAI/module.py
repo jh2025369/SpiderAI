@@ -154,6 +154,7 @@ def do_solve_challenge(data):
             )
             rt.close()
         except Exception as e:
+            rt.close()
             print(f'Error executing JavaScript code: {e}')
     return res
 
@@ -267,7 +268,7 @@ def completion(prompt, file_ids, session_id, parent_message_id, token):
     response = requests.post(url, headers=headers, data=json.dumps(body), stream=True)
     message = ''
     is_message = False
-    message_id = None
+    message_id = parent_message_id
     try:
         for line in response.iter_lines():
             if line:

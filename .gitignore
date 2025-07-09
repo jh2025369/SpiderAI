@@ -1,3 +1,5 @@
 __pycache__/
 libs/freeAI/images/
 libs/xueqiu/data/
+libs/eastmoney/data/
+libs/jqka/data/
