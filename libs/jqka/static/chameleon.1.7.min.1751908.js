@@ -1356,7 +1356,10 @@ function main() {
 }
 
 
-function getHexinV(href) {
+function getHexinV(host, href) {
+    location.host = host;
+    location.hostname = host;
+    window.location.hostname = host;
     location.href = href;
     main();
     return localStorage['hexin-v'];

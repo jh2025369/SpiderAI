@@ -15,7 +15,7 @@ xueqiu_bp = Blueprint('xueqiu', __name__)
 def get_cookie():
     user_id = request.args.get('userId')
     cookie = xueqiu.request_xueqiu()
-    RedisService.set_cookie(user_id, cookie)
+    RedisService.set_cookie(user_id, cookie, 3600 * 24 * 3)
     return {
         'status': 'success',
         'cookie': cookie
@@ -163,18 +163,18 @@ def recommend_industry_stock():
             key = 'sh_sz'
             stocks = xueqiu.search_market_ranking(cookie, 'CN', key, 1, 30, 'percent', 'desc', encode)
             for stock in stocks:
-                kline = xueqiu.search_kline(cookie, stock['symbol'], timestamp_ms, -284)
+                kline = xueqiu.search_kline(cookie, stock['symbol'], timestamp_ms, -100)
                 stock['kline'] = ','.join(map(str, kline))
             xueqiu.export_text(stocks, f'ranking/{key}', name)
 
-            prompt = f'分析{type_}行业股票走向，推荐五日内最可能会涨的股票'
+            prompt = f'分析{type_}行业股票走向，推荐近两天会涨的股票，给出购买价格'
             encoder = freeAI.process_local_file(f'libs/xueqiu/data/ranking/{key}/{type_}.txt')
             file_id = freeAI.upload_file(encoder, token)
             if freeAI.fetch_files([file_id], token):
                 session_id = freeAI.create_session(token)
                 result, message_id = freeAI.completion(prompt, [file_id], session_id, None, token)
                 RedisService.update_hset(f'{user_id}:session', session_id, message_id)
-                RedisService.update_hset(f'{user_id}:message', session_id, result)
+                # RedisService.update_hset(f'{user_id}:message', session_id, result)
             
             return {
                 'status': 'success',
@@ -211,9 +211,9 @@ def quantify_stock():
         message = {}
 
         stock = xueqiu.search_stock(cookie, symbol)
-        kline = xueqiu.search_kline(cookie, symbol, timestamp_ms, -60)
-        stock['kline'] = ','.join(map(str, kline))
-        message['stock'] = stock
+        # kline = xueqiu.search_kline(cookie, symbol, timestamp_ms, -60)
+        # stock['kline'] = ','.join(map(str, kline))
+        # message['stock'] = stock
 
         for i in range(1, page + 1):
             status = xueqiu.search_status(cookie, symbol, i, count, source)
@@ -229,7 +229,7 @@ def quantify_stock():
         if session_id:
             last_message = RedisService.get_hset(f'{user_id}:message', session_id)
         
-        prompt = f'量化市场情绪指标，判断{stock['name']}股票一周内走势\n{last_message}'
+        prompt = f'量化市场情绪指标，判断{stock['name']}股票近两天涨跌，给出购买价格\n{last_message}'
         pattern = re.compile(rf'{symbol}-\d+')
         directory = f'libs/xueqiu/data/{symbol}/'
         file_ids = []
@@ -244,7 +244,6 @@ def quantify_stock():
             new_session_id = freeAI.create_session(token)
             result, message_id = freeAI.completion(prompt, file_ids, new_session_id, None, token)
             RedisService.update_hset(f'{user_id}:session', new_session_id, message_id)
-            RedisService.update_hset(f'{user_id}:message', new_session_id, result)
             
         return {
             'status': 'success',
@@ -258,8 +257,8 @@ def quantify_stock():
         }
     
 
-@xueqiu_bp.route('/recommend_gn_stock', methods=['GET'])
-def recommend_gn_stock():
+@xueqiu_bp.route('/recommend_gn_hy_stock', methods=['GET'])
+def recommend_gn_hy_stock():
     user_id = request.args.get('userId')
     code = request.args.get('code')
     cookie = RedisService.get_cookie(user_id)
@@ -274,34 +273,54 @@ def recommend_gn_stock():
     timestamp_ms = int(now.timestamp() * 1000)
     
     try:
-        gnzj_stocks = jqka.search_gnzj(code, 5)
+        name = ''
+        zj_stocks = []
+        if code in jqka.gn_mapping:
+            name = jqka.gn_mapping[code]
+            zj_stocks = jqka.search_gnzj(code, 5)
+        elif code in jqka.hy_mapping:
+            name = jqka.hy_mapping[code]
+            zj_stocks = jqka.search_hyzj(code, 5)
+        else:
+            return {
+                'status': 'error',
+                'message': 'code not exit.'
+            }
+        
         stocks = []
-        for gnzj_stock in gnzj_stocks:
-            symbol = xueqiu.search_stock_by_name(cookie, gnzj_stock['name'])
+        for zj_stock in zj_stocks:
+            symbol = xueqiu.search_stock_by_name(cookie, zj_stock['name'])
+            if xueqiu.is_gem_or_star_stock(symbol):
+                continue
+
             stock = xueqiu.search_stock(cookie, symbol)
+            zj_stock['symbol'] = symbol
+            zj_stock['volume'] = stock['volume']
             if stock['exchange'] == 'SZ' or stock['exchange'] == 'SH':
-                kline = xueqiu.search_kline(cookie, symbol, timestamp_ms, -284)
-                gnzj_stock['kline'] = ','.join(map(str, kline))
-                stocks.append(gnzj_stock)
-                time.sleep(random.random() * 5)
+                # kline = xueqiu.search_kline(cookie, symbol, timestamp_ms, -100)
+                # zj_stock['kline'] = ','.join(map(str, kline))
+                # stocks.append(zj_stock)
+                robot_data = jqka.search_robot_data(zj_stock['name'])
+                new_stock = {**zj_stock, **robot_data}
+                stocks.append(new_stock)
+                time.sleep(random.random() * 10)
         
         if len(stocks) == 0:
             return {
-            'status': 'error',
-            'message': 'stock not exit.'
-        }
+                'status': 'error',
+                'message': 'stock not exit.'
+            }
 
-        gn_name = jqka.gn_mapping[code]
-        jqka.export_text(stocks, '', gn_name)
+        jqka.export_text(stocks, '', name)
 
-        prompt = f'分析{gn_name}股票走向，推荐五日内最可能会涨的股票'
-        encoder = freeAI.process_local_file(f'libs/jqka/data/{gn_name}.txt')
+        prompt = f'分析今天的{name}股票走向，推荐近两天会涨、今天值得购买的股票，给出购买价格'
+        encoder = freeAI.process_local_file(f'libs/jqka/data/{name}.txt')
         file_id = freeAI.upload_file(encoder, token)
         if freeAI.fetch_files([file_id], token):
             session_id = freeAI.create_session(token)
             result, message_id = freeAI.completion(prompt, [file_id], session_id, None, token)
             RedisService.update_hset(f'{user_id}:session', session_id, message_id)
-            RedisService.update_hset(f'{user_id}:message', session_id, result)
+            # RedisService.update_hset(f'{user_id}:message', session_id, result)
         
         return {
             'status': 'success',

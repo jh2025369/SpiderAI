@@ -103,12 +103,13 @@ def export_text(data, path_name, file_name, is_batch=None):
             for item in batch_data:
                 for key in item:
                     if type(item[key]) == list:
-                        f.write(f'{mapping[key]}: [\n')
+                        f.write(f'{mapping[key]}: [')
                         for child_item in item[key]:
+                            f.write('\n')
                             f.write('  {\n')
                             for child_key, child_value in child_item.items():
                                 f.write(f'    {mapping[child_key]}: {child_value}\n')
-                            f.write('  },\n')
+                            f.write('  },')
                         f.write(']\n')
                     else:
                         f.write(f'{mapping[key]}: {item[key]}\n')
@@ -158,8 +159,8 @@ def search_status(cookie, symbol, page, count, source):
             message[id] = {
                 'createdAt': datetime.fromtimestamp(item['created_at'] // 1000),
                 'title': item['title'],
-                'description': item['description'],
-                # 'text': item['text'],
+                # 'description': item['description'],
+                'text': item['text'],
                 'replyCount': track.get('reply_count', 0),
                 'viewCount': item['view_count']
             }
@@ -260,6 +261,16 @@ def search_stock_by_name(cookie, name):
         print(f'ConnectionError: {e}')
     
     return code
+
+
+def is_gem_or_star_stock(stock_code):
+    """
+    判断股票是否为创业板（代码以300开头）
+    :param stock_code: 股票代码（字符串或数字）
+    :return: bool
+    """
+    code = str(stock_code[2:]).strip()
+    return code.startswith('300') or code.startswith('688')
 
 
 def search_longhu(cookie, symbol, page, size):
