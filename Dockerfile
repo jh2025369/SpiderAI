@@ -15,6 +15,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# RUN sudo apt-get install -y libgbm-dev libnss3 libatk-bridge2.0-0 libdrm-dev libxkbcommon-dev libgtk-3-0 libasound2
+# python -m playwright install chromium
+
 COPY . .
 
 EXPOSE 8080

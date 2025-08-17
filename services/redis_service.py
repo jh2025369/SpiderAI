@@ -60,15 +60,24 @@ class RedisService:
         return cls._conn.hdel(key, *fields)
 
     @classmethod
-    def set_cookie(cls, user_id, cookie, expire=3600 * 24):
+    def set_cookie(cls, user_id, cookie, expire=None):
         """存储Cookie并设置过期"""
         if not cls._conn:
             raise RuntimeError("Redis未初始化")
-        return cls._conn.setex(
-            name=f"user:{user_id}:cookie",
-            time=timedelta(seconds=expire),
-            value=cookie
-        )
+        
+        key = f"user:{user_id}:cookie"
+        
+        if expire is not None:
+            return cls._conn.setex(
+                name=key,
+                time=timedelta(seconds=expire),
+                value=cookie
+            )
+        else:
+            return cls._conn.set(
+                name=key,
+                value=cookie
+            )
     
     @classmethod
     def get_cookie(cls, user_id):

@@ -3,3 +3,6 @@ libs/freeAI/images/
 libs/xueqiu/data/
 libs/eastmoney/data/
 libs/jqka/data/
+libs/yuanbao/static*
+libs/yuanbao/main*
+node_modules

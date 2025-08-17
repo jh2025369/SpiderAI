@@ -7,3 +7,6 @@ pyevaljs4==0.2.0
 retrying==1.3.5
 requests-toolbelt==1.0.0
 selenium==4.29.0
+playwright==1.54.0
+aiofiles==24.1.0
+jsbeautifier==1.15.4
